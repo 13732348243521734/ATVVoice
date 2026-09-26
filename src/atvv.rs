@@ -204,6 +204,13 @@ pub async fn run_session(
                         if keepalive_enabled {
                             keepalive_timer.as_mut().reset(Instant::now() + keepalive_interval);
                         }
+                        // Reset frame timer too: a stale, already-elapsed timer from a
+                        // previous session (which ended >frame_timeout ago) would
+                        // otherwise fire on the very next select! poll, instantly
+                        // closing this brand-new stream before any frame arrives.
+                        if frame_timeout_enabled {
+                            frame_timer.as_mut().reset(Instant::now() + timeouts.frame_timeout);
+                        }
                     }
                     CtlEvent::StartSearch => {
                         tracing::info!("START_SEARCH (state={:?})", state);
